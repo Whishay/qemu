@@ -400,6 +400,21 @@ static void vring_packed_desc_write(VirtIODevice *vdev, VRingDescPacked *desc,
                                    sizeof(VRingDescPacked));
 }
 
+static void vring_packed_desc_write(VirtIODevice *vdev, VRingDescPacked *desc,
+                            MemoryRegionCache *cache, int i)
+{
+    virtio_tswap64s(vdev, &desc->addr);
+    virtio_tswap32s(vdev, &desc->len);
+    virtio_tswap16s(vdev, &desc->id);
+    virtio_tswap16s(vdev, &desc->flags);
+    address_space_write_cached(cache,
+                               sizeof(VRingDescPacked) * i, desc,
+                               sizeof(VRingDescPacked));
+    address_space_cache_invalidate(cache,
+                                   sizeof(VRingDescPacked) * i,
+                                   sizeof(VRingDescPacked));
+}
+
 static void vring_packed_desc_read_flags(VirtIODevice *vdev,
                     VRingDescPacked *desc, MemoryRegionCache *cache, int i)
 {
