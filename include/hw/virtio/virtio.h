@@ -59,6 +59,8 @@ typedef struct VirtQueue VirtQueue;
 typedef struct VirtQueueElement
 {
     unsigned int index;
+    unsigned int len;
+    unsigned int ndescs;
     unsigned int out_num;
     unsigned int in_num;
     hwaddr *in_addr;
