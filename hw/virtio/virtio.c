@@ -452,13 +452,13 @@ static void vring_packed_desc_read_flags(VirtIODevice *vdev,
               &desc->flags, sizeof(desc->flags));
 }
 
-static inline bool is_desc_avail(VirtQueue *vq, struct VRingDescPacked *desc)
+static inline bool is_desc_avail(struct VRingDescPacked *desc, bool wrap_counter)
 {
     bool avail, used;
 
     avail = !!(desc->flags & AVAIL_DESC_PACKED(1));
     used = !!(desc->flags & USED_DESC_PACKED(1));
-    return (avail != used) && (avail == vq->avail_wrap_counter);
+    return (avail != used) && (avail == wrap_counter);
 }
 
 /* Fetch avail_idx from VQ memory only when we really need to know if
@@ -509,7 +509,7 @@ static int virtio_queue_packed_empty_rcu(VirtQueue *vq)
 
     /* Make sure we see the updated flag */
     smp_mb();
-    return !is_desc_avail(vq, &desc);
+    return !is_desc_avail(&desc, vq->avail_wrap_counter);
 }
 
 static int virtio_queue_packed_empty(VirtQueue *vq)
@@ -659,6 +659,14 @@ static void virtqueue_packed_fill(VirtQueue *vq, const VirtQueueElement *elem,
 
     /* Make sure flags has been updated */
     smp_mb();
+}
+
+void virtqueue_packed_fill_head(VirtQueue *vq, const VirtQueueElement *elem,
+                        unsigned int len, unsigned int idx)
+{
+    if (virtio_vdev_has_feature(vq->vdev, VIRTIO_F_RING_PACKED)) {
+        virtqueue_packed_fill(vq, NULL, len, 0);
+    }
 }
 
 void virtqueue_fill(VirtQueue *vq, const VirtQueueElement *elem,
@@ -939,6 +947,7 @@ static void virtqueue_packed_get_avail_bytes(VirtQueue *vq,
     MemoryRegionCache indirect_desc_cache = MEMORY_REGION_CACHE_INVALID;
     int64_t len = 0;
     VRingDescPacked desc;
+    bool wrap_counter;
 
     if (unlikely(!vq->vring.desc)) {
         if (in_bytes) {
@@ -952,6 +961,7 @@ static void virtqueue_packed_get_avail_bytes(VirtQueue *vq,
 
     rcu_read_lock();
     idx = vq->last_avail_idx;
+    wrap_counter = vq->avail_wrap_counter;
     total_bufs = in_total = out_total = 0;
 
     max = vq->vring.num;
@@ -965,7 +975,7 @@ static void virtqueue_packed_get_avail_bytes(VirtQueue *vq,
     vring_packed_desc_read(vdev, &desc, desc_cache, idx);
     /* Make sure we see all the fields*/
     smp_rmb();
-    while (is_desc_avail(vq, &desc)) {
+    while (is_desc_avail(&desc, wrap_counter)) {
         unsigned int num_bufs;
         unsigned int i;
 
@@ -1024,6 +1034,7 @@ static void virtqueue_packed_get_avail_bytes(VirtQueue *vq,
             } else {
                 if (++idx >= vq->vring.num) {
                     idx -= vq->vring.num;
+                    wrap_counter = !wrap_counter;
                 }
                 vring_packed_desc_read(vdev, &desc, desc_cache, idx);
             }
@@ -2168,6 +2179,12 @@ static bool vring_packed_need_event(VirtQueue *vq, uint16_t off_wrap,
 
 static bool virtio_packed_should_notify(VirtIODevice *vdev, VirtQueue *vq)
 {
+    vring_need_event(0, 0, 0);
+    vring_packed_need_event(vq, 0, 0, 0);
+    vdev = NULL;
+
+    return 1;
+#if 0
     VRingPackedDescEvent e;
     uint16_t old, new;
     bool v;
@@ -2190,6 +2207,7 @@ static bool virtio_packed_should_notify(VirtIODevice *vdev, VirtQueue *vq)
     new = vq->signalled_used = vq->used_idx;
 
     return !v || vring_packed_need_event(vq, e.off_wrap, new, old);
+#endif
 }
 
 /* Called within rcu_read_lock().  */

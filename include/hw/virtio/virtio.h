@@ -173,6 +173,8 @@ void virtqueue_unpop(VirtQueue *vq, const VirtQueueElement *elem,
 bool virtqueue_rewind(VirtQueue *vq, unsigned int num);
 void virtqueue_fill(VirtQueue *vq, const VirtQueueElement *elem,
                     unsigned int len, unsigned int idx);
+void virtqueue_packed_fill_head(VirtQueue *vq, const VirtQueueElement *elem,
+                        unsigned int len, unsigned int idx);
 
 void virtqueue_map(VirtIODevice *vdev, VirtQueueElement *elem);
 void *virtqueue_pop(VirtQueue *vq, size_t sz);
