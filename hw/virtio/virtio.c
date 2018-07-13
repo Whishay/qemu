@@ -661,14 +661,6 @@ static void virtqueue_packed_fill(VirtQueue *vq, const VirtQueueElement *elem,
     smp_mb();
 }
 
-void virtqueue_packed_fill_head(VirtQueue *vq, const VirtQueueElement *elem,
-                        unsigned int len, unsigned int idx)
-{
-    if (virtio_vdev_has_feature(vq->vdev, VIRTIO_F_RING_PACKED)) {
-        virtqueue_packed_fill(vq, NULL, len, 0);
-    }
-}
-
 void virtqueue_fill(VirtQueue *vq, const VirtQueueElement *elem,
                     unsigned int len, unsigned int idx)
 {
