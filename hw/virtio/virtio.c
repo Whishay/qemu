@@ -2171,12 +2171,14 @@ static bool vring_packed_need_event(VirtQueue *vq, uint16_t off_wrap,
 
 static bool virtio_packed_should_notify(VirtIODevice *vdev, VirtQueue *vq)
 {
+#if 0
     vring_need_event(0, 0, 0);
     vring_packed_need_event(vq, 0, 0, 0);
     vdev = NULL;
 
     return 1;
-#if 0
+
+#else
     VRingPackedDescEvent e;
     uint16_t old, new;
     bool v;
