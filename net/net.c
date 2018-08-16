@@ -549,6 +549,7 @@ static ssize_t filter_receive_iov(NetClientState *nc,
     ssize_t ret = 0;
     NetFilterState *nf = NULL;
 
+    return 0;
     if (direction == NET_FILTER_DIRECTION_TX) {
         QTAILQ_FOREACH(nf, &nc->filters, next) {
             ret = qemu_netfilter_receive(nf, direction, sender, flags, iov,
@@ -636,7 +637,7 @@ static ssize_t qemu_send_packet_async_with_flags(NetClientState *sender,
     if (sender->link_down || !sender->peer) {
         return size;
     }
-
+#if 1
     /* Let filters handle the packet first */
     ret = filter_receive(sender, NET_FILTER_DIRECTION_TX,
                          sender, flags, buf, size, sent_cb);
@@ -649,7 +650,7 @@ static ssize_t qemu_send_packet_async_with_flags(NetClientState *sender,
     if (ret) {
         return ret;
     }
-
+#endif
     queue = sender->peer->incoming_queue;
 
     return qemu_net_queue_send(queue, sender, flags, buf, size, sent_cb);
