@@ -2380,6 +2380,12 @@ static const VMStateDescription vmstate_virtqueue = {
     .fields = (VMStateField[]) {
         VMSTATE_UINT64(vring.avail, struct VirtQueue),
         VMSTATE_UINT64(vring.used, struct VirtQueue),
+        VMSTATE_BOOL(avail_wrap_counter, struct VirtQueue),
+        VMSTATE_BOOL(event_wrap_counter, struct VirtQueue),
+        VMSTATE_BOOL(used_wrap_counter, struct VirtQueue),
+        VMSTATE_UINT16(used_idx, struct VirtQueue),
+        VMSTATE_UINT16(shadow_avail_idx, struct VirtQueue),
+        VMSTATE_UINT32(inuse, struct VirtQueue),
         VMSTATE_END_OF_LIST()
     }
 };
@@ -2707,6 +2713,7 @@ int virtio_load(VirtIODevice *vdev, QEMUFile *f, int version_id)
         }
         vdev->vq[i].vring.desc = qemu_get_be64(f);
         qemu_get_be16s(f, &vdev->vq[i].last_avail_idx);
+
         vdev->vq[i].signalled_used_valid = false;
         vdev->vq[i].notification = true;
 
@@ -2786,6 +2793,10 @@ int virtio_load(VirtIODevice *vdev, QEMUFile *f, int version_id)
                 virtio_init_region_cache(vdev, i);
             } else {
                 virtio_queue_update_rings(vdev, i);
+            }
+
+            if (virtio_vdev_has_feature(vdev, VIRTIO_F_RING_PACKED)) {
+                continue;
             }
 
             nheads = vring_avail_idx(&vdev->vq[i]) - vdev->vq[i].last_avail_idx;
