@@ -2207,7 +2207,7 @@ static bool virtio_split_should_notify(VirtIODevice *vdev, VirtQueue *vq)
     return !v || vring_need_event(vring_get_used_event(vq), new, old);
 }
 
-static bool vring_packed_need_event(VirtQueue *vq, bool wrap, 
+static bool vring_packed_need_event(VirtQueue *vq, bool wrap,
                             uint16_t off_wrap, uint16_t new, uint16_t old)
 {
     int off = off_wrap & ~(1 << 15);
